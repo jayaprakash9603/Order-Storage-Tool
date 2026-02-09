@@ -28,6 +28,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.orderdata.dto.OrderRecordRequest;
@@ -66,8 +67,20 @@ public class OrderRecordService {
             Pattern.CASE_INSENSITIVE);
     private static final Pattern SPRINT_LABEL_PATTERN = Pattern.compile("^Sprint-\\d+$", Pattern.CASE_INSENSITIVE);
 
+    @Value("${app.order.storage.location:}")
+    private String storageLocation;
+
     public OrderRecordResponse storeOrderRecord(OrderRecordRequest request) {
-        Path directoryPath = resolveDirectory(request.getDirectoryPath());
+        String directory = (storageLocation != null && !storageLocation.trim().isEmpty()) 
+                ? storageLocation 
+                : request.getDirectoryPath();
+        
+        // If still empty, default to a safe local folder relative to run dir
+        if (directory == null || directory.trim().isEmpty()) {
+            directory = "order-storage-data";
+        }
+
+        Path directoryPath = resolveDirectory(directory);
         Path filePath = directoryPath.resolve(FILE_NAME);
         boolean fileExists = Files.exists(filePath);
 
